@@ -4,10 +4,29 @@ import './modules/modals';
 import './modules/latest.posts';
 import './modules/stock-slider';
 
-import { connectForms, cookiecook } from '@alexsab-ru/scripts';
+import ResponsiveMenu from './modules/ResponsiveMenu';
+
+import LazyLoader from './modules/LazyLoader';
+
+import { connectForms, cookiecook, startNoBounce, initPersistCampaignData } from '@alexsab-ru/scripts';
+
+startNoBounce();
+initPersistCampaignData();
 cookiecook();
-connectForms('https://alexsab.ru/lead/dev/', {
-	confirmModalText: 'Вы уже оставляли заявку сегодня, с Вами обязательно свяжутся в ближайшее время!',
+
+// Wait for window._dp to be available before connecting forms
+const waitForDp = setInterval(() => {
+	if (window._dp && window._dp.connectforms_link) {
+		clearInterval(waitForDp);
+		connectForms(window._dp.connectforms_link, {
+			confirmModalText: 'Вы уже оставляли заявку сегодня, с Вами обязательно свяжутся в ближайшее время!',
+		});
+	}
+}, 100); // Check every 100ms
+
+document.addEventListener('DOMContentLoaded', () => {
+	new ResponsiveMenu('#site_nav ul');
+	new LazyLoader();
 });
 
 import GLightbox from 'glightbox';
@@ -17,80 +36,6 @@ const lightbox = GLightbox({
 	loop: true,
 	slideEffect: 'fade',
 });
-
-const imageObserver = new IntersectionObserver((entries, observer) => {
-	entries.forEach((entry) => {
-		if (entry.isIntersecting) {
-			entry.target.src = entry.target.dataset.src;
-			observer.unobserve(entry.target);
-		}
-	});
-	},
-	{
-		threshold: 0.5
-	}
-);
-
-const lazys = document.querySelectorAll('.lazy');
-
-if(lazys.length){
-	lazys.forEach(lazy => {
-		const images = lazy.querySelectorAll('img');
-		if(images){
-			images.forEach(img => {
-				imageObserver.observe(img);
-				img.onload = () => {img.classList.remove('opacity-0')}
-			});
-		}
-		lazy.classList.remove('lazy')
-	})
-}
-
-
-
-function executeRecaptcha() {
-grecaptcha.ready(function() {
-	grecaptcha.execute('6Lepfy4pAAAAAAGHFP655qNe6Bb_BcskklcxajC6', {action: 'china_samara_auto'}).then(function(token) {
-		let formData = new FormData();
-		formData.append('g-recaptcha-response', token);
-		const params = new URLSearchParams([...formData]);
-		fetch("https://alexsab.ru/lead/re/", {
-			method: "POST",
-			mode: "cors",
-			cache: "no-cache",
-			credentials: "same-origin",
-			headers: {
-				"Content-Type": "application/x-www-form-urlencoded",
-			},
-			body: params,
-		})
-			.then((res) => res.json())
-			.then((data) => {
-				// console.log('Success:', data);
-				window.re = data.data.response.success;
-			})
-			.catch((error) => {
-				console.error('Error:', error);
-			});
-	});
-});
-}
-
-// Проверяем, определена ли grecaptcha
-if (typeof grecaptcha === "undefined") {
-	// Если grecaptcha не определена, устанавливаем интервал для проверки
-	var checkRecaptchaAvailability = setInterval(function() {
-		if (typeof grecaptcha !== "undefined") {
-			// Как только grecaptcha становится доступной, очищаем интервал
-			clearInterval(checkRecaptchaAvailability);
-			// Выполняем код с grecaptcha
-			executeRecaptcha();
-		}
-	}, 1000); // Проверяем каждую секунду
-} else {
-	// Если grecaptcha уже доступна, просто выполняем код
-	executeRecaptcha();
-}
 
 // Редирект, если в конце URL больше одного слеша
 const path = window.location.pathname;

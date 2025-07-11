@@ -14,7 +14,6 @@ const {
     iconClasses,
     ...rest
 } = Astro.props;
-import './buttons.scss'
 import {Icon} from 'astro-icon/components';
 ---
 
@@ -29,7 +28,7 @@ import {Icon} from 'astro-icon/components';
         data-img_position={dataImgPosition}
         {...rest}
     >
-        {title}
+        <span>{title}</span>
         {icon && <Icon name={icon} class={iconClasses} />}
     </a>
     ) :
@@ -38,6 +37,7 @@ import {Icon} from 'astro-icon/components';
         type="submit"
         class={`btn ${classes}`}
         value={title}
+        {...rest}
     />
     ) :
     view === 'popup-link' ? (
@@ -48,7 +48,7 @@ import {Icon} from 'astro-icon/components';
             data-form_name={dataFormName}
             {...rest}
         >
-            {title}
+            <span>{title}</span>
             {icon && <Icon name={icon} class={iconClasses} />}
         </a>
     ) :
@@ -58,7 +58,7 @@ import {Icon} from 'astro-icon/components';
             href={url ? url : '#'}
             {...rest}
         >
-            {title}
+            <span>{title}</span>
             {icon && <Icon name={icon} class={iconClasses} />}
         </a>
     ) : ('')

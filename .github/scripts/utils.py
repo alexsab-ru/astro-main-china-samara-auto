@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import os
 import re
 import copy
@@ -13,6 +14,7 @@ import urllib.parse
 from pathlib import Path
 from typing import Dict, Any
 from config import *
+from bs4 import BeautifulSoup
 
 
 def process_friendly_url(friendly_url, replace = "-"):
@@ -37,19 +39,104 @@ def process_permalink(vin):
     return f"/cars/{vin[:5]}-{vin[-4:]}/"
 
 
+def format_html_for_mdx(raw_html):
+    """
+    Форматирует HTML для MDX, учитывая особенности MDX-парсера:
+    - Удаляет теги <p>, так как MDX сам их добавляет
+    - Заменяет <br/> на перенос строки
+    - Сохраняет форматирующие теги
+    - Добавляет пробелы после закрывающих тегов
+    - Добавляет пробелы перед открывающими тегами
+    - Добавляет пробелы между тегами
+    - Добавляет переносы между списками и жирным текстом
+    """
+    # Проверяем корректность HTML с помощью BeautifulSoup
+    soup = BeautifulSoup(raw_html, "html.parser")
+    
+    # Получаем HTML без форматирования (сохраняет &nbsp;)
+    html_output = str(soup)
+
+    # print(html_output)
+    
+    # Экранируем проблемные символы для MDX
+    html_output = html_output.replace('\\', '\\\\')  # Экранируем обратные слеши
+    html_output = html_output.replace('{', '\\{')    # Экранируем фигурные скобки
+    html_output = html_output.replace('}', '\\}')
+    
+    # Удаляем теги <p> и </p>, так как MDX сам их добавит
+    html_output = re.sub(r'</?p>', '', html_output)
+    
+    # Заменяем <br/> и <br> на перенос строки
+    html_output = re.sub(r'(<br/?>)', r'\1\n', html_output)
+    
+    # Добавляем <br/> между закрывающим списком и тегом жирности
+    html_output = re.sub(r'(</ul>)(<strong>)', r'\1<br/>\2', html_output)
+    
+    # Добавляем пробел после закрывающего тега, если после него идет буква
+    html_output = re.sub(r'(</[^>]+>)([а-яА-Яa-zA-Z])', r'\1 \2', html_output)
+    
+    # Добавляем пробел перед открывающим тегом, если перед ним буква
+    html_output = re.sub(r'([а-яА-Яa-zA-Z])(<[^/][^>]*>)', r'\1 \2', html_output)
+    
+    # Добавляем пробел между двумя тегами
+    html_output = re.sub(r'(>)(<)', r'\1 \2', html_output)
+    
+    # Добавляем переносы строк для лучшей читаемости
+    # 1. Разбиваем на строки по закрывающим тегам </ul>, </li>
+    html_output = re.sub(r'(</ul>|</li>)', r'\1\n', html_output)
+    
+    # 2. Разбиваем на строки по открывающим тегам <ul>, <li>
+    html_output = re.sub(r'(<ul>|<li>)', r'\n\1', html_output)
+    
+    # 3. Удаляем лишние пустые строки
+    # html_output = re.sub(r'\n\s*\n', '\n', html_output)
+    
+    # 4. Удаляем пробелы в начале и конце каждой строки
+    html_output = '\n'.join(line.strip() for line in html_output.split('\n'))
+    
+    return html_output
+
 # Helper function to process description and add it to the body
 def process_description(desc_text):
-    lines = desc_text.split('\n')
-    processed_lines = []
+    """
+    Обрабатывает текст описания, добавляя HTML-разметку.
+    Предотвращает вложенные p-теги и проверяет корректность HTML.
+    
+    Args:
+        desc_text (str): Исходный текст описания
+        
+    Returns:
+        str: Обработанный HTML-текст
+    """
+    if not desc_text:
+        return ""
+    
+    pretty_html = format_html_for_mdx(desc_text)
+    # Разбиваем результат на строки
+    lines = pretty_html.split('\n')
+    wrapped_lines = []
     for line in lines:
-        if line.strip() == '':
-            processed_lines.append("<p>&nbsp;</p>")
+        # Если строка пустая или состоит только из пробелов, добавляем <p>&nbsp;</p>
+        if not line.strip():
+            wrapped_lines.append('<p>&nbsp;</p>')
+            continue
+        # Если строка начинается с <ul>, <li>, </ul>, </li>, не оборачиваем в <p>
+        if line.lstrip().startswith('<ul>') or line.lstrip().startswith('<li>') or \
+           line.lstrip().startswith('</ul>') or line.lstrip().startswith('</li>'):
+            wrapped_lines.append(line)
         else:
-            processed_lines.append(f"<p>{line}</p>")
-    return '\n'.join(processed_lines)
+            # Оборачиваем в <p>...</p>
+            wrapped_lines.append(f'<p> {line} </p>')
+    # Склеиваем обратно в одну строку с переносами
+    result_html = '\n'.join(wrapped_lines)
+    return result_html
 
 
 def createThumbs(image_urls, friendly_url, current_thumbs, thumbs_dir, skip_thumbs=False):
+    # print(f"🔍 Отладка создания превью:")
+    # print(f"   Количество изображений: {len(image_urls)}")
+    # print(f"   Пропуск превью: {skip_thumbs}")
+    # print(f"   Директория превью: {thumbs_dir}")
 
     # Определение относительного пути для возврата
     relative_thumbs_dir = thumbs_dir.replace("public", "")
@@ -60,6 +147,8 @@ def createThumbs(image_urls, friendly_url, current_thumbs, thumbs_dir, skip_thum
     # Обработка первых 5 изображений
     for index, img_url in enumerate(image_urls[:5]):
         try:
+            # print(f"   🔄 Обрабатываю изображение {index + 1}: {img_url}")
+            
             # Извлечение имени файла из URL и удаление расширения
             original_filename = os.path.basename(urllib.parse.urlparse(img_url).path)
             filename_without_extension, _ = os.path.splitext(original_filename)
@@ -72,8 +161,11 @@ def createThumbs(image_urls, friendly_url, current_thumbs, thumbs_dir, skip_thum
             output_path = os.path.join(thumbs_dir, output_filename)
             relative_output_path = os.path.join(relative_thumbs_dir, output_filename)
 
+            # print(f"   📁 Путь к превью: {output_path}")
+
             # Проверка существования файла
             if not os.path.exists(output_path) and not skip_thumbs:
+                # print(f"   ⬇️ Загружаю изображение...")
                 # Загрузка и обработка изображения, если файла нет
                 response = requests.get(img_url)
                 image = Image.open(BytesIO(response.content))
@@ -82,15 +174,15 @@ def createThumbs(image_urls, friendly_url, current_thumbs, thumbs_dir, skip_thum
                 new_height = int(new_width / aspect_ratio)
                 resized_image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
                 resized_image.save(output_path, "WEBP")
-                print(f"Создано превью: {relative_output_path}")
-            else:
-                print(f"Файл уже существует: {relative_output_path} или пропущен флагом skip_thumbs: {skip_thumbs}")
+                # print(f"   ✅ Создано превью: {relative_output_path}")
+            # else:
+                # print(f"   ⚠️ Файл уже существует: {relative_output_path} или пропущен флагом skip_thumbs: {skip_thumbs}")
 
             # Добавление относительного пути файла в списки
             new_or_existing_files.append(relative_output_path)
             current_thumbs.append(output_path)  # Здесь сохраняем полный путь для дальнейшего использования
         except Exception as e:
-            print(f"Ошибка при обработке изображения {img_url}: {e}")
+            print(f"   ❌ Ошибка при обработке изображения {img_url}: {e}")
 
     return new_or_existing_files
 
@@ -182,6 +274,7 @@ def localize_element_text(element):
         "grey": "Серый",
         "azure": "Лазурный",
         "beige": "Бежевый",
+        "Dark grey": "Темно-серый",
 
         # steeringWheel
         "left": "Левый",
@@ -250,6 +343,7 @@ def avitoColor(color):
         'темно-серый': 'серый',
         'платиновый графит': 'серый',
         '1l1/21 серый хром металл': 'серый',
+        '1l1/20': 'серый',
         'синий': 'синий',
         'темно-синий': 'синий',
         'фиолетовый': 'фиолетовый',
@@ -270,7 +364,7 @@ def avitoColor(color):
         return color  # Возвращаем оригинальный ключ, если он не найден
 
 
-def load_price_data(file_path: str = "./src/data/cars_dealer_price.json") -> Dict[str, Dict[str, int]]:
+def load_price_data(file_path: str = "./src/data/dealer-cars_price.json") -> Dict[str, Dict[str, int]]:
     """
     Загружает данные о ценах из JSON файла.
     
@@ -297,19 +391,59 @@ def update_car_prices(car, prices_data: Dict[str, Dict[str, int]]) -> None:
         prices_data: Данные о ценах из JSON
     """
 
-    vin = car.find('vin').text
-    current_sale_price = int(car.find('priceWithDiscount').text)
+    # Проверяем существование элемента vin
+    vin_elem = car.find('vin')
+    if vin_elem is None or vin_elem.text is None:
+        print("Элемент 'vin' отсутствует или пустой")
+        return
+    
+    vin = vin_elem.text
+    print(f"🔑 Обрабатываю автомобиль с VIN: {vin}")
+    vin_hidden = process_vin_hidden(vin)
+    
+    # Проверяем существование элемента priceWithDiscount
+    price_with_discount_elem = car.find('priceWithDiscount')
+    if price_with_discount_elem is None or price_with_discount_elem.text is None:
+        print(f"Элемент 'priceWithDiscount' отсутствует или пустой для VIN: {vin}")
+        return
+    
+    try:
+        current_sale_price = int(price_with_discount_elem.text)
+    except ValueError:
+        print(f"Не удалось преобразовать 'priceWithDiscount' в число для VIN: {vin}")
+        return
 
-    if vin in prices_data:
-        car_prices = prices_data[vin]
-        final_price = car_prices["Конечная цена"]
-        if final_price <= current_sale_price:
-            discount = car_prices["Скидка"]
-            rrp = car_prices["РРЦ"]
-            car.find('priceWithDiscount').text = str(final_price)
-            car.find('sale_price').text = str(final_price)
-            car.find('max_discount').text = str(discount)
-            car.find('price').text = str(rrp)
+    # Проверяем наличие VIN в данных о ценах
+    if vin not in prices_data:
+        return
+    
+    car_prices = prices_data[vin]
+    
+    # Проверяем наличие необходимых ключей в данных о ценах
+    required_keys = ["Конечная цена", "Скидка", "РРЦ"]
+    if not all(key in car_prices for key in required_keys):
+        print(f"Отсутствуют необходимые ключи в данных о ценах для VIN: {vin}")
+        return
+    
+    final_price = car_prices["Конечная цена"]
+    if final_price <= current_sale_price:
+        discount = car_prices["Скидка"]
+        rrp = car_prices["РРЦ"]
+        
+        # Безопасно обновляем элементы
+        price_with_discount_elem.text = str(final_price)
+        
+        sale_price_elem = car.find('sale_price')
+        if sale_price_elem is not None:
+            sale_price_elem.text = str(final_price)
+        
+        max_discount_elem = car.find('max_discount')
+        if max_discount_elem is not None:
+            max_discount_elem.text = str(discount)
+        
+        price_elem = car.find('price')
+        if price_elem is not None:
+            price_elem.text = str(rrp)
 
 
 def get_xml_content(filename: str, xml_url: str) -> ET.Element:
@@ -398,46 +532,95 @@ def should_remove_car(car: ET.Element, mark_ids: list, folder_ids: list) -> bool
     # Если ни одно условие не выполнено, автомобиль оставляем
     return False
 
+def check_local_files(brand, model, color, vin):
+    """Проверяет наличие локальных файлов изображений."""
+    folder = get_folder(brand, model)
+    if folder:
+        color_image = get_color_filename(brand, model, color)
+        if color_image:
 
-def create_file(car, filename, friendly_url, current_thumbs, existing_files, config):
-    vin = car.find('vin').text
+            thumb_path = os.path.join("img", "models", folder, "colors", color_image)
+            thumb_brand_path = os.path.join("img", "models", brand.lower(), folder, "colors", color_image)
+        
+            # Проверяем, существует ли файл
+            if os.path.exists(f"public/{thumb_path}"):
+                return f"/{thumb_path}"
+            elif os.path.exists(f"public/{thumb_brand_path}"):
+                return f"/{thumb_brand_path}"
+            else:
+                errorText = f"\n<b>Не найден локальный файл</b>\n<pre>{color_image}</pre>\n<code>public/{thumb_path}</code>\n<code>public/{thumb_brand_path}</code>"
+                print_message(errorText)
+                return "https://cdn.alexsab.ru/errors/404.webp"
+        else:
+            return "https://cdn.alexsab.ru/errors/404.webp"
+    else:
+        return "https://cdn.alexsab.ru/errors/404.webp"
+
+
+def create_file(car, filename, friendly_url, current_thumbs, sort_storage_data, dealer_photos_for_cars_avito, config, existing_files):
+    # Проверяем существование элемента vin
+    vin_elem = car.find('vin')
+    if vin_elem is None or vin_elem.text is None:
+        return
+    
+    vin = vin_elem.text
     vin_hidden = process_vin_hidden(vin)
+    
+    # Проверяем существование других необходимых элементов
+    color_elem = car.find('color')
+    if color_elem is None or color_elem.text is None:
+        return
+    
+    folder_id_elem = car.find('folder_id')
+    if folder_id_elem is None or folder_id_elem.text is None:
+        return
+    
+    mark_id_elem = car.find('mark_id')
+    if mark_id_elem is None or mark_id_elem.text is None:
+        return
     # Преобразование цвета
-    color = car.find('color').text.strip().capitalize()
-    model = car.find('folder_id').text.strip()
-    brand = car.find('mark_id').text.strip()
+    color = color_elem.text.strip().capitalize()
+    model = folder_id_elem.text.strip()
+    brand = mark_id_elem.text.strip()
 
+    # Получаем folder и color_image для CDN
     folder = get_folder(brand, model)
     color_image = get_color_filename(brand, model, color)
-    if folder and color_image:
-        thumb_path = os.path.join("img", "models", folder, "colors", color_image)
-        thumb_brand_path = os.path.join("img", "models", brand.lower(), folder, "colors", color_image)
-        # Проверяем, существует ли файл
-        if os.path.exists(f"public/{thumb_path}"):
-            thumb = f"/{thumb_path}"
-        elif os.path.exists(f"public/{thumb_brand_path}"):
-            thumb = f"/{thumb_brand_path}"
-        else:
-            print("")
-            errorText = f"VIN: {vin}. Не хватает файла цвета: {color}, {thumb_path}"
-            print(errorText)
-            print("")
-            with open('output.txt', 'a') as file:
-                file.write(f"{errorText}\n")
-            thumb = "/img/404.jpg"
-    else:
-        print("")
-        errorText = f"VIN: {vin}. Не хватает модели: {model} или цвета: {color}"
-        print(errorText)
-        print("")
-        with open('output.txt', 'a') as file:
-            file.write(f"{errorText}\n")
-        # Если 'model' или 'color' не найдены, используем путь к изображению ошибки 404
-        thumb = "/img/404.jpg"
 
+    thumb = "https://cdn.alexsab.ru/errors/404.webp"
+    # Проверка через CDN сервис
+    if folder:
+        if color_image:
+            cdn_path = f"https://cdn.alexsab.ru/b/{brand.lower()}/img/models/{folder}/colors/{color_image}"
+            try:
+                response = requests.head(cdn_path)
+                if response.status_code == 200:
+                    thumb = cdn_path
+                else:
+                    # Если файл не найден в CDN, проверяем локальные файлы
+                    errorText = f"\n<b>Не удалось найти файл на CDN</b>. Статус <b>{response.status_code}</b>\n<pre>{color_image}</pre>\n<a href='{cdn_path}'>{cdn_path}</a>"
+                    print_message(errorText, 'error')
+                    thumb = check_local_files(brand, model, color, vin)
+            except requests.RequestException as e:
+                # В случае ошибки при проверке CDN, используем локальные файлы
+                errorText = f"\nОшибка при проверке CDN: {str(e)}"
+                print_message(errorText, 'error')
+                thumb = check_local_files(brand, model, color, vin)
 
     # Forming the YAML frontmatter
     content = "---\n"
+
+    # Check if the VIN exists as a key in sort_storage_data
+    if vin in sort_storage_data:
+        # If VIN exists, use its order value
+        order = sort_storage_data[vin]
+    else:
+        # If VIN doesn't exist, increment the current order and use it
+        sort_storage_data['order'] = sort_storage_data.get('order', 0) + 1
+        order = sort_storage_data['order']
+
+    content += f"order: {order}\n"
+
     # content += "layout: car-page\n"
     total_element = car.find('total')
     if total_element is not None:
@@ -445,6 +628,7 @@ def create_file(car, filename, friendly_url, current_thumbs, existing_files, con
     else:
         content += "total: 1\n"
     # content += f"permalink: {friendly_url}\n"
+    content += f"vin_list: {vin}\n"
     content += f"vin_hidden: {vin_hidden}\n"
 
     h1 = join_car_data(car, 'mark_id', 'folder_id', 'modification_id')
@@ -452,7 +636,8 @@ def create_file(car, filename, friendly_url, current_thumbs, existing_files, con
 
     content += f"breadcrumb: {join_car_data(car, 'mark_id', 'folder_id', 'complectation_name')}\n"
 
-    content += f"title: 'Купить {join_car_data(car, 'mark_id', 'folder_id', 'modification_id')} у официального дилера в {dealer.get('where')}'\n"
+    # Купить {{mark_id}} {{folder_id}} {{modification_id}} {{color}} у официального дилера в {{where}}
+    content += f"title: 'Купить {join_car_data(car, 'mark_id', 'folder_id', 'modification_id', 'color')} у официального дилера в {config['legal_city_where']}'\n"
 
     description = (
         f'Купить автомобиль {join_car_data(car, "mark_id", "folder_id")}'
@@ -460,7 +645,7 @@ def create_file(car, filename, friendly_url, current_thumbs, existing_files, con
         f'{", комплектация " + car.find("complectation_name").text if car.find("complectation_name").text != None else ""}'
         f'{", цвет - " + car.find("color").text if car.find("color").text != None else ""}'
         f'{", двигатель - " + car.find("modification_id").text if car.find("modification_id").text != None else ""}'
-        f' у официального дилера в г. {dealer.get("city")}. Стоимость данного автомобиля {join_car_data(car, "mark_id", "folder_id")} – {car.find("priceWithDiscount").text}'
+        f' у официального дилера в г. {config["legal_city"]}. Стоимость данного автомобиля {join_car_data(car, "mark_id", "folder_id")} – {car.find("priceWithDiscount").text}'
     )
     content += f"description: '{description}'\n"
 
@@ -478,7 +663,13 @@ def create_file(car, filename, friendly_url, current_thumbs, existing_files, con
         if child.tag == 'folder_id':
             content += f"{child.tag}: '{child.text}'\n"
         elif child.tag == f'{config["image_tag"]}s':
-            images = [img.text for img in child.findall(config['image_tag'])]
+            # Извлекаем URL из атрибута 'url' вместо текста элемента
+            images = extract_image_urls(child, config['image_tag'])
+            # Проверяем наличие дополнительных фотографий в dealer_photos_for_cars_avito
+            if vin in dealer_photos_for_cars_avito:
+                # Добавляем только уникальные изображения
+                new_images = [img for img in dealer_photos_for_cars_avito[vin]['images'] if img not in images]
+                images.extend(new_images)
             thumbs_files = createThumbs(images, friendly_url, current_thumbs, config['thumbs_dir'], config['skip_thumbs'])
             content += f"images: {images}\n"
             content += f"thumbs: {thumbs_files}\n"
@@ -512,6 +703,10 @@ def create_file(car, filename, friendly_url, current_thumbs, existing_files, con
             if child.text:  # Only add if there's content
                 content += f"{child.tag}: {format_value(child.text)}\n"
 
+    # Если есть описание из dealer_photos_for_cars_avito, используем его
+    if vin in dealer_photos_for_cars_avito and dealer_photos_for_cars_avito[vin]['description'] and description == "":
+        description = dealer_photos_for_cars_avito[vin]['description']
+
     content += "---\n"
     content += process_description(description)
 
@@ -537,7 +732,7 @@ def format_value(value: str) -> str:
         return f"'{value}'"
     return value
 
-def update_yaml(car, filename, friendly_url, current_thumbs, config):
+def update_yaml(car, filename, friendly_url, current_thumbs, sort_storage_data, dealer_photos_for_cars_avito, config):
 
     print(f"Обновление файла: {filename}")
     with open(filename, "r", encoding="utf-8") as f:
@@ -600,7 +795,7 @@ def update_yaml(car, filename, friendly_url, current_thumbs, config):
                 f'{", комплектация " + car.find("complectation_name").text if car.find("complectation_name").text != None else ""}'
                 f'{", цвет - " + car.find("color").text if car.find("color").text != None else ""}'
                 f'{", двигатель - " + car.find("modification_id").text if car.find("modification_id").text != None else ""}'
-                f' у официального дилера в г. {dealer.get("city")}. Стоимость данного автомобиля {join_car_data(car, "mark_id", "folder_id")} – {car.find("priceWithDiscount").text}'
+                f' у официального дилера в г. {config["legal_city"]}. Стоимость данного автомобиля {join_car_data(car, "mark_id", "folder_id")} – {car.find("priceWithDiscount").text}'
             )
             data["description"] = description
         except ValueError:
@@ -627,6 +822,10 @@ def update_yaml(car, filename, friendly_url, current_thumbs, config):
 
 
     vin = car.find('vin').text
+    if vin is not None:
+        # Создаём или добавляем строку в список
+        data['vin_list'] += ", " + vin
+
     vin_hidden = process_vin_hidden(vin)
     if vin_hidden is not None:
         # Создаём или добавляем строку в список
@@ -646,12 +845,30 @@ def update_yaml(car, filename, friendly_url, current_thumbs, config):
 
             data['id'] += ", " + str(unique_id.text)
 
+    if 'order' not in data:
+        if vin in sort_storage_data:
+            # If VIN exists, use its order value
+            order = sort_storage_data[vin]
+        else:
+            # If VIN doesn't exist, increment the current order and use it
+            sort_storage_data['order'] = sort_storage_data.get('order', 0) + 1
+            order = sort_storage_data['order']
+
+        data['order'] = order
 
     images_container = car.find(f"{config['image_tag']}s")
     if images_container is not None:
-        images = [img.text for img in images_container.findall(config['image_tag'])]
+        images = extract_image_urls(images_container, config['image_tag'])
+        # Проверяем наличие дополнительных фотографий в dealer_photos_for_cars_avito
+        if vin in dealer_photos_for_cars_avito:
+            # Добавляем только уникальные изображения
+            new_images = [img for img in dealer_photos_for_cars_avito[vin]['images'] if img not in images]
+            images.extend(new_images)
         if len(images) > 0:
-            data.setdefault('images', []).extend(images)
+            # Удаляем дубликаты из существующего списка
+            existing_images = data.get('images', [])
+            unique_images = list(dict.fromkeys(existing_images + images))
+            data['images'] = unique_images
             # Проверяем, нужно ли добавлять эскизы
             if 'thumbs' not in data or (len(data['thumbs']) < 5):
                 thumbs_files = createThumbs(images, friendly_url, current_thumbs, config['thumbs_dir'], config['skip_thumbs'])
@@ -854,3 +1071,30 @@ def load_file_config(config_path: str, source_type: str, default_config) -> Dict
     except json.JSONDecodeError:
         print(f"Ошибка при чтении {config_path}. Используются значения по умолчанию.")
         return default_config
+
+def extract_image_urls(images_container, image_tag):
+    """
+    Универсальная функция для извлечения URL изображений.
+    Проверяет сначала атрибут 'url', затем текст элемента.
+    
+    Args:
+        images_container: Контейнер с изображениями
+        image_tag: Тег изображения
+        
+    Returns:
+        list: Список URL изображений
+    """
+    images = []
+    for i, img in enumerate(images_container.findall(image_tag)):
+        # Сначала пробуем получить URL из атрибута 'url'
+        url = img.get('url')
+        if url:
+            images.append(url)
+        else:
+            # Если атрибута нет, пробуем получить из текста элемента
+            if img.text and img.text.strip():
+                url = img.text.strip()
+                images.append(url)
+            else:
+                print(f"  ⚠️ Изображение {i+1}: Не удалось извлечь URL (нет атрибута 'url' и текста)")
+    return images
