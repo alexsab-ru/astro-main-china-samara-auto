@@ -2,6 +2,7 @@
 import settings from '@/data/settings.json';
 import Site from '@/components/PageTypes/Site.astro';
 import SiteAlphaCenter from '@/components/PageTypes/SiteAlphaCenter.astro';
+import SiteChinaSamaraAuto from '@/components/PageTypes/SiteChinaSamaraAuto.astro';
 import Landing from '@/components/PageTypes/Landing.astro';
 import LandingGAC from '@/components/PageTypes/LandingGAC.astro';
 import LandingHAVAL from '@/components/PageTypes/LandingHAVAL.astro';
@@ -11,7 +12,8 @@ const SiteType = {
 	LANDING_GAC: 'landing-gac',
 	LANDING_HAVAL: 'landing-haval',
 	SITE: 'site',
-	SITE_ALPHA_CENTER: 'site-alpha-center'
+	SITE_ALPHA_CENTER: 'site-alpha-center',
+	SITE_CHINA_SAMARA_AUTO: 'site-china-samara-auto'
 };
 const { siteType } = settings;
 let Content: typeof Site | typeof Landing;
@@ -31,6 +33,9 @@ switch(siteType) {
 		break;
 	case SiteType.SITE_ALPHA_CENTER:
 		Content = SiteAlphaCenter;
+		break;
+	case SiteType.SITE_CHINA_SAMARA_AUTO:
+		Content = SiteChinaSamaraAuto;
 		break;
 	default:
 		Content = Site;
