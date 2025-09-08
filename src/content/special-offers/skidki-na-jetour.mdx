@@ -1,0 +1,22 @@
+---
+h1: "Скидки на JETOUR"
+title: "Выгода до 800 000 ₽ на JETOUR"
+caption: "Выгода до 800 000 ₽ на JETOUR"
+breadcrumb: "JETOUR"
+pubDate: "2025-09-08"
+toDate: false
+image: "https://cdn.alexsab.ru/specials/china-samara-auto/photo_2024-01-12 15.39.03-wide-540w.webp"
+description: "Самое лучше предложение на JETOUR в Самаре"
+externalUrl: /cars/?brand=jetour
+---
+import Button from '@/components/Button/Button.astro';
+import SpecialSalonsInfo from '@/components/SpecialSalonsInfo.astro';
+import settings from '@/data/settings.json';
+export const { site_name, phone_common } = settings;
+import { phoneFormat } from '@/js/utils/numbers.format';
+import { LAST_DAY, MONTH, MONTH_NOMINATIVE, MONTH_GENITIVE, MONTH_PREPOSITIONAL, YEAR } from '@/js/utils/date';
+
+export const dateFrom = '01.07.2024';
+export const dateTo = `${LAST_DAY}.${MONTH}.${YEAR}`;
+export const dateToGenitive = `${LAST_DAY} ${MONTH_GENITIVE} ${YEAR}`;
+export const dateToPrepositional = `${MONTH_PREPOSITIONAL} ${YEAR}`;
