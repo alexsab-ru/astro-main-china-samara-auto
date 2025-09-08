@@ -13,9 +13,11 @@ post.data?.toDate && typeof post.data?.toDate === 'boolean'
 		: post.data?.pubDate
 			? (date = post.data?.pubDate)
 			: null;
+
+const href = post?.data?.externalUrl ? post.data.externalUrl : `/${post.collection}/${post.slug}/`;
 ---
 <a 
-	href={`/${post.collection}/${post.slug}/`}
+	href={href}
 	class="!no-underline"
 >
 	<div class="bg-gray-50 group rounded-2xl relative aspect-video overflow-hidden lazy">
