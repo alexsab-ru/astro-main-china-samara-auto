@@ -11,6 +11,10 @@ export const collectionSchema = {
 		image: z.string().optional(),
 		pubDate: z.coerce.date().optional(),
 		toDate: z.union([z.boolean().optional(), z.coerce.date().optional()]),
+		externalUrl: z.union([
+			z.string().url(),
+			z.string().regex(/^(\/|#|mailto:|tel:)/)
+		]).optional(),
 		// content: z.string().optional(),
 	}),
 };
