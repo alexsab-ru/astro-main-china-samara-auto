@@ -1,5 +1,5 @@
 ---
-import salonsData from '@/data/salons.json';
+import settingsData from '@/data/settings.json';
 import BrandLogos from './BrandLogos.astro';
 import BrandCards from './BrandCards.astro';
 
@@ -23,12 +23,7 @@ const brandCounts = filePaths.reduce((acc, path) => {
   return acc;
 }, {} as Record<string, number>);
 
-const brands = [...new Set(salonsData.map((item) => {
-  const arr = item.map.balloon.split('/');
-  const brand = arr[arr.length-1].split('-')[0];
-  return brand;
-
-}))];
+const brands = settingsData.brand.split(',').map((brand) => brand.trim().toLowerCase());
 
 const { type = ViewType.LOGO } = Astro.props;
 ---
