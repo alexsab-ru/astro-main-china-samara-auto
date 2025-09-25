@@ -59,6 +59,11 @@ export default defineConfig({
 			},
 		},
 	},
+	redirects: {
+		"/cars": "/cars/",
+		"/special": "/special-offers/",
+		"/contacts": "/contacts/"
+	},
 	site: 'https://site.com',
 	base: "/"
 });
