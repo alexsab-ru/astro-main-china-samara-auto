@@ -64,6 +64,6 @@ export default defineConfig({
 		"/special": "/special-offers/",
 		"/contacts": "/contacts/"
 	},
-	site: 'https://site.com',
+	site: 'https://china-samara-auto.ru',
 	base: "/"
 });
