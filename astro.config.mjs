@@ -59,11 +59,6 @@ export default defineConfig({
 			},
 		},
 	},
-	redirects: {
-		"/cars": "/cars/",
-		"/special": "/special-offers/",
-		"/contacts": "/contacts/"
-	},
 	site: 'https://china-samara-auto.ru',
 	base: "/"
 });
