@@ -10,7 +10,6 @@ import { phoneFormat } from '@/js/utils/numbers.format';
 const url = `https://alexsab.ru?utm_source=client&utm_medium=${brand}&utm_compaing=${site_name}`;
 import salonsData from '@/data/salons.json';
 import type { ISalon } from '@/types/ISalon';
-
 const salons = salonsData.filter((salon: ISalon) => {
     if (salon?.hidden_in?.includes('footer')) return false;
     if (salon?.type && salon.type.length) return salon.type.includes('footer');
@@ -80,7 +79,6 @@ salons
                     </div>
                 ) : <Brands type="logo" />
             }
-            
 
             <div class="">
                 {Object.keys(socials.footer).length ? (
