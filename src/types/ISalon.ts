@@ -7,7 +7,8 @@ export type TSalonMap = {
 
 export interface ISalon {
 	name?: string;
-	type?: string | string[];
+	brands?: string;
+	type?: string;
 	address?: string;
 	phone?: string;
 	work_hours?: string;
