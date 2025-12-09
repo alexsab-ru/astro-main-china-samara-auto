@@ -1,16 +1,18 @@
 ---
-h1: "Скидки на KAIYI_ALPHA"
-title: "Выгода до 500 000 ₽ на KAIYI"
-caption: "Выгода до 500 000 ₽ на KAIYI"
-breadcrumb: "KAIYI_ALPHA"
-pubDate: "2025-09-08"
+h1: "Скидки на Kaiyi в Самаре"
+title: "Выгода на Kaiyi в Самаре"
+caption: "Выгода на Kaiyi в Самаре"
+breadcrumb: "Kaiyi"
+pubDate: "{{year}}-{{month}}-01"
 toDate: false
 image: "https://cdn.alexsab.ru/specials/china-samara-auto/kaiyi-x3-comfort-540w.webp"
-description: "Самое лучше предложение на KAIYI_ALPHA в Самаре"
+description: "Самое лучше предложение на Kaiyi в Самаре"
 externalUrl: /cars/?brand=kaiyi
+brand: kaiyi
 ---
 import Button from '@/components/Button/Button.astro';
 import SpecialSalonsInfo from '@/components/SpecialSalonsInfo.astro';
+import FeedbackForm from '@/components/FeedbackForm/FeedbackForm.astro';
 import settings from '@/data/settings.json';
 export const { site_name, phone_common } = settings;
 import { phoneFormat } from '@/js/utils/numbers.format';
@@ -20,3 +22,8 @@ export const dateFrom = '01.07.2024';
 export const dateTo = `${LAST_DAY}.${MONTH}.${YEAR}`;
 export const dateToGenitive = `${LAST_DAY} ${MONTH_GENITIVE} ${YEAR}`;
 export const dateToPrepositional = `${MONTH_PREPOSITIONAL} ${YEAR}`;
+
+<div class="py-20" id="service-request">
+	<h2>Узнать подробнее про Kaiyi в Самаре</h2>
+	<FeedbackForm title="" dataFormName="Узнать подробнее про Kaiyi в Самаре" />
+</div>

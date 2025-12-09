@@ -1,16 +1,18 @@
 ---
 h1: "Скидки на CHERY"
-title: "Выгода до 750 000 ₽ на CHERY"
-caption: "Выгода до 750 000 ₽ на CHERY"
+title: "Выгода на CHERY в Самаре"
+caption: "Выгода на Chery в Самаре"
 breadcrumb: "CHERY"
-pubDate: "2025-09-08"
+pubDate: "{{year}}-{{month}}-01"
 toDate: false
 image: "https://cdn.alexsab.ru/specials/china-samara-auto/1st_banner_3000x2000_5089880001841022436_hudceef0397239b0fb4a82735210cec0df_0_3840x0_resize_q80_lanczos-540w.webp"
-description: "Самое лучше предложение на CHERY в Самаре"
+description: "Самое лучше предложение на Chery в Самаре"
 externalUrl: /cars/?brand=chery
+brand: chery
 ---
 import Button from '@/components/Button/Button.astro';
 import SpecialSalonsInfo from '@/components/SpecialSalonsInfo.astro';
+import FeedbackForm from '@/components/FeedbackForm/FeedbackForm.astro';
 import settings from '@/data/settings.json';
 export const { site_name, phone_common } = settings;
 import { phoneFormat } from '@/js/utils/numbers.format';
@@ -20,3 +22,8 @@ export const dateFrom = '01.07.2024';
 export const dateTo = `${LAST_DAY}.${MONTH}.${YEAR}`;
 export const dateToGenitive = `${LAST_DAY} ${MONTH_GENITIVE} ${YEAR}`;
 export const dateToPrepositional = `${MONTH_PREPOSITIONAL} ${YEAR}`;
+
+<div class="py-20" id="service-request">
+	<h2>Узнать подробнее про Chery в Самаре</h2>
+	<FeedbackForm title="" dataFormName="Узнать подробнее про Chery в Самаре" />
+</div>
