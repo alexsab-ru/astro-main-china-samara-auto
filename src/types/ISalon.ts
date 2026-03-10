@@ -5,6 +5,16 @@ export type TSalonMap = {
     ya_link?: string;
 }
 
+export type TSalonCalltouch = {
+	mod_id?: string;
+	site_id?: string;
+	routeKey?: string;
+};
+
+export type TSalonScripts = {
+	calltouch?: TSalonCalltouch;
+};
+
 export interface ISalon {
 	name?: string;
 	brands?: string;
@@ -17,4 +27,5 @@ export interface ISalon {
 	legal_inn?: number;
 	map?: TSalonMap;
 	hidden_in?: string[];
+	scripts?: TSalonScripts;
 }
