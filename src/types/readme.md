@@ -12,24 +12,35 @@
 
 Вот все файлы, где есть проверка `!salon?.type || salon?.type.includes(...)` для данных из `salons.json`:
 
-- src/components/ExtendedFooter.astro
-- src/components/Header/Header.astro
+- src/const.js
 - src/components/Contacts.astro
+- src/components/ExtendedFooter.astro
 - src/components/Modals.astro
+- src/components/SpecialSalonsInfo.astro
+- src/components/Cars/Item.astro
+- src/components/FeedbackForm/Form.astro
+- src/components/Header/Header.astro
+- src/components/OnlineCalculation/OnlineCalculation.astro
 - src/components/PageTypes/Landing.astro
+- src/components/PageTypes/LandingEVOLUTE.astro
 - src/components/PageTypes/LandingGAC.astro
+- src/components/PageTypes/LandingGEELY.astro
 - src/components/PageTypes/LandingHAVAL.astro
+- src/components/PageTypes/LandingHONDA.astro
+- src/components/PageTypes/ServiceKIA.astro
 - src/components/PageTypes/Site.astro
 - src/components/PageTypes/SiteAlphaCenter.astro
-- src/components/SpecialSalonsInfo.astro
-- src/const.js
+- src/components/PageTypes/SiteChinaSamaraAuto.astro
+- src/components/PageTypes/SiteGacArmada.astro
+- src/components/PageTypes/SiteInfinitiSamauto.astro
 - src/pages/__import.astro
 - src/pages/__trade-in.astro
 - src/pages/contacts.astro
 - src/pages/cookie-policy.astro
-- src/pages/models/[...slug].astro
 - src/pages/privacy-policy.astro
 - src/pages/test-drive.astro
+- src/pages/models/[...slug].astro
+- src/types/readme.md
 
 ## Поле `hidden_in`
 
